@@ -20,10 +20,8 @@ import pdf from "../images/pdf.svg";
 import { preDistance } from "../utils/preDistance";
 import { ISelect } from "../views/Home";
 import { analog } from "../utils/Analog";
-// import { ExportToExcel1 } from "../utils/ExportExcel";
 import { generatePDF } from "../utils/ExportPDF";
-import { ExportToExcel } from "../utils/ExportExcel";
-// import { generateExcel } from "../utils/GenExcel";
+import excelize from "../utils/excelize";
 
 export interface IVehicle {
   fleet_id: number;
@@ -110,7 +108,10 @@ function TempReport({ selectFleet }: Props) {
    * Retrive Vehicles
    */
   const { data: vehicleData, error: vehicleError } = useSWR(
-    [`http://localhost:5000/api/fleet/vehicles/${selectFleet?.value}`, config],
+    [
+      `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicles/${selectFleet?.value}`,
+      config,
+    ],
     fetcher
   );
 
@@ -125,7 +126,7 @@ function TempReport({ selectFleet }: Props) {
   const { data: vehicleReportData, error: vehicleReportError } = useSWR(
     [
       shouldFetch
-        ? `http://localhost:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
+        ? `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
         : undefined,
       config,
     ],
@@ -287,20 +288,20 @@ function TempReport({ selectFleet }: Props) {
     );
   }
 
-  // function handleGenExcel() {
-  //   console.log("fire Gen Excel");
-  //   GentoExcel(
-  //     vehicleReportData,
-  //     fileName,
-  //     selectFleet?.label,
-  //     min1[0].toFixed(1).toString(),
-  //     max1[0].toFixed(1).toString(),
-  //     averageTemp1 ? averageTemp1.toFixed(1).toString() : "0.0",
-  //     min2[0].toFixed(1).toString(),
-  //     max2[0].toFixed(1).toString(),
-  //     averageTemp2 ? averageTemp2.toFixed(1).toString() : "00.0"
-  //   );
-  // }
+  function handleGenExcel() {
+    console.log("fire Gen Excel");
+    excelize(
+      vehicleReportData,
+      fileName,
+      selectFleet?.label,
+      min1[0].toFixed(1).toString(),
+      max1[0].toFixed(1).toString(),
+      averageTemp1 ? averageTemp1.toFixed(1).toString() : "0.0",
+      min2[0].toFixed(1).toString(),
+      max2[0].toFixed(1).toString(),
+      averageTemp2 ? averageTemp2.toFixed(1).toString() : "0.0"
+    );
+  }
   return (
     <div className=" flex flex-col dark:bg-black gap-10">
       <div className="flex flex-col sticky top-32 z-10 w-full px-5 dark:bg-black bg-white">
@@ -388,21 +389,7 @@ function TempReport({ selectFleet }: Props) {
                     <div className=" flex flex-row gap-5">
                       <button
                         className=" w-auto bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-green-500 hover:border-green-600 hover:bg-green-200 hover:text-white shadow-md py-2 px-6 inline-flex items-center"
-                        onClick={ExportToExcel(
-                          vehicleReportData,
-                          fileName,
-                          selectFleet?.label,
-                          min1[0].toFixed(1).toString(),
-                          max1[0].toFixed(1).toString(),
-                          averageTemp1
-                            ? averageTemp1.toFixed(1).toString()
-                            : "00.0",
-                          min2[0].toFixed(1).toString(),
-                          max2[0].toFixed(1).toString(),
-                          averageTemp2
-                            ? averageTemp2.toFixed(1).toString()
-                            : "00.0"
-                        )}
+                        onClick={handleGenExcel}
                       >
                         <img src={excel} className=" h-6 mx-auto " />
                       </button>

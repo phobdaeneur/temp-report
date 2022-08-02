@@ -11,8 +11,6 @@ import logo from "../images/logo.png";
 import { ThemeContext } from "../themeContext";
 import { Tab } from "@headlessui/react";
 import temp from "../images/temp.svg";
-import home from "../images/home.svg";
-import { NyanSwal } from "../utils/NyanSwal";
 
 export interface IFleet {
   fleet_id: string;
@@ -78,7 +76,7 @@ function Home() {
   };
 
   React.useEffect(() => {
-    NyanSwal.close();
+    "Loding.....";
   }, []);
 
   return (
@@ -165,12 +163,6 @@ function Home() {
             <Tab.List>
               <div className="flex flex-row justify-start items-center gap-10 ">
                 <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
-                  <div className=" bg-orange-300 text-white rounded-full mr-3 w-8">
-                    <img src={home} className="h-6 mx-auto " />
-                  </div>
-                  <Tab>หน้าเเรก</Tab>
-                </div>
-                <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
                   <div className=" bg-purple-400 text-white rounded-full mr-3 w-8">
                     <img src={temp} className="h-6 mx-auto " />
                   </div>
@@ -181,9 +173,6 @@ function Home() {
           </div>
 
           <Tab.Panels>
-            <Tab.Panel>
-              <HomeTab />
-            </Tab.Panel>
             <Tab.Panel>
               <TempReport selectFleet={selectFleet} />
             </Tab.Panel>

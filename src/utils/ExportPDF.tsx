@@ -163,7 +163,7 @@ const generatePDF = (
     },
     styles: {
       font: "Maitree",
-      fontSize: 7,
+      fontSize: 5,
     },
     headStyles: {
       halign: "center",

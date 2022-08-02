@@ -363,7 +363,7 @@ function TempReport({ selectFleet }: Props) {
         <div className="w-full px-5">
           <div className="widget w-full p-4 rounded-lg bg-white border-l-4 border-purple-400 shadow-lg dark:bg-black dark:shadow-md dark:shadow-purple-300">
             {vehicleReportData === undefined || !vehicleReportData.length ? (
-              <div className=" text-3xl text-center underline underline-offset-2 decoration-purple-500 decoration-2 decoration-wavy dark:text-white">
+              <div className=" text-3xl text-center dark:text-white">
                 กรุณาระบุข้อมูลให้ครบถ้วนเเล้วกดปุ่มค้นหาเพื่อเเสดงข้อมูลรายงาน
               </div>
             ) : (
@@ -376,7 +376,7 @@ function TempReport({ selectFleet }: Props) {
                 <div className="md:flex hidden md:flex-col justify-between text-slate-600 font-mono dark:text-gray-300 w-full pr-20">
                   <div className="flex flex-row gap-6 items-center justify-between ">
                     <div className="text-xl">สรุปข้อมูลรายงาน</div>
-                    <div className="text-base underline decoration-rose-500 decoration-2 decoration-wavy ">
+                    <div className="text-base ">
                       ระยะทางรวม :{" "}
                       {parseFloat(
                         vehicleReportData
@@ -406,15 +406,15 @@ function TempReport({ selectFleet }: Props) {
                     <div className="text-base underline decoration-yellow-500 decoration-4 ">
                       อุณหภูมิ 1
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-yellow-500 decoration-2 decoration-wavy">
+                    <div className="text-base">
                       ค่าอุณหภูมิสูงสุด :{" "}
                       {parseFloat(max1 ? max1[0] : undefined).toFixed(1)}
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-yellow-500 decoration-2 decoration-wavy">
+                    <div className="text-base">
                       ค่าอุณหภูมิต่ำสุด :{" "}
                       {parseFloat(min1 ? min1[0] : undefined).toFixed(1)}
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-yellow-500 decoration-2 decoration-wavy">
+                    <div className="text-base">
                       ค่าอุณหภูมิเฉลี่ย :{" "}
                       {isNaN(averageTemp1) ? "0.0" : averageTemp1.toFixed(1)}
                     </div>
@@ -424,15 +424,15 @@ function TempReport({ selectFleet }: Props) {
                     <div className="text-base underline decoration-sky-500 decoration-4 ">
                       อุณหภูมิ 2
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-sky-500 decoration-2 decoration-wavy">
+                    <div className="text-base ">
                       ค่าอุณหภูมิสูงสุด :{" "}
                       {parseFloat(max2 ? max2[0] : undefined).toFixed(1)}
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-sky-500 decoration-2 decoration-wavy">
+                    <div className="text-base ">
                       ค่าอุณหภูมิต่ำสุด :{" "}
                       {parseFloat(min2 ? min2[0] : undefined).toFixed(1)}
                     </div>
-                    <div className="text-base underline underline-offset-2 decoration-sky-500 decoration-2 decoration-wavy">
+                    <div className="text-base ">
                       ค่าอุณหภูมิเฉลี่ย :{" "}
                       {isNaN(averageTemp2) ? "0.0" : averageTemp2.toFixed(1)}
                     </div>

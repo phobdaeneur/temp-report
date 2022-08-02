@@ -6,7 +6,6 @@ import { StoreContext } from "../store";
 import loginIcon from "../images/loginIcon.svg";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { NyanAlert } from "../utils/NyanSwal";
 
 export interface ILogin {
   username: string | null;
@@ -50,7 +49,6 @@ function Login() {
     e.preventDefault();
 
     try {
-      NyanAlert();
       const authUser = await login(credentials);
       // set global state
       loggedIn(authUser);

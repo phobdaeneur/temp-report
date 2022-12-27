@@ -6,6 +6,7 @@ import { StoreContext } from "../store";
 import loginIcon from "../images/loginIcon.svg";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { Cookies } from "react-cookie";
 
 export interface ILogin {
   username: string | null;
@@ -67,6 +68,15 @@ function Login() {
       }
     }
   };
+  const cookies = new Cookies();
+  const submit = (): void => {
+    cookies.set("tempReport", "true");
+    // console.log(cookies.get("tempReport"));
+    setCookies(cookies.get("tempReport"));
+  };
+
+  const [cookie, setCookies] = useState(cookies);
+
   return (
     <div className="font-mono relative py-24 md:py-48 bgLogin h-screen">
       <div className="container mx-auto">
@@ -153,6 +163,42 @@ function Login() {
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      {cookies.get("tempReport") !== "true" ? (
+        <>
+          <div className=" bg-white flex justify-between items-center px-10 w-screen h-40 overflow-x-hidden overflow-y-auto fixed bottom-0 z-50 outline-none focus:outline-none">
+            <div className="flex flex-col gap-2 w-5/6">
+              <label className="indent-8 text-2xl font-bold">
+                การเก็บเเละใช้คุกกี้
+              </label>
+              <label className="indent-8 font-mono ">
+                เว็บไซต์นี้ใช้คุกกี้ เพื่อมอบประสบการณ์การใช้งานที่ดีให้กับท่าน
+                และเพื่อพัฒนาคุณภาพการให้บริการเว็บไซต์ที่ตรงต่อความต้องการของท่านมากยิ่งขึ้น
+                ท่านสามารถทราบรายละเอียดเกี่ยวกับคุกกี้ได้ที่
+              </label>
+              <label className="indent-8 font-mono">
+                This Website uses cookies to provide you with the best
+                experience and to improve the website services in order to
+                better serve your requirements. You can find the details about
+                cookies use on Cookies Policy.
+              </label>
+            </div>
+            <div className="flex flex-row items-center justify-center gap-4">
+              <button
+                onClick={submit}
+                className=" w-24 h-10 rounded-xl bg-[#20741a] text-sm font-medium text-white hover:text-white select-none hover:bg-[#20741a]/50"
+              >
+                Accept
+              </button>
+              <button className=" w-24 h-10 rounded-xl bg-[#ff5946] text-sm font-medium text-white hover:text-white select-none hover:bg-[#ff5946]/50">
+                Regect
+              </button>
+            </div>
+          </div>
+          <div className="opacity-80 fixed inset-0 z-40 bg-black"></div>
+        </>
+      ) : null}
     </div>
   );
 }

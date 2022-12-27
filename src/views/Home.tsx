@@ -1,5 +1,6 @@
 import React, { useState, useContext, Fragment, useRef } from "react";
 import TempReport from "../components/TempReport";
+import OilReport from "../components/OilReport";
 import HomeTab from "../components/HomeTab";
 import useSWR from "swr"; // swr [Stale While Revalidate] 1. ทำการดึง data จาก cache มาให้เราก่อน (stale) 2. จากนั้นก็ ยิง request ไปที่ API (revalidate) 3. นำข้อมูลจาก API ที่ได้มาอัพเดทกับข้อมูลเดิม
 import Select, { SingleValue } from "react-select";
@@ -11,6 +12,7 @@ import logo from "../images/logo.png";
 import { ThemeContext } from "../themeContext";
 import { Tab } from "@headlessui/react";
 import temp from "../images/temp.svg";
+import oil from "../images/oil.svg";
 
 export interface IFleet {
   fleet_id: string;
@@ -49,10 +51,7 @@ function Home() {
    * Retrive Fleets
    */
   const { data: fleetData, error } = useSWR(
-    [
-      `https://geotrackerbackend.kratostracking.com:5000/api/fleets/${user?.username}`,
-      config,
-    ],
+    [`http://localhost:5000/api/fleets/${user?.username}`, config],
     fetcher
   );
 
@@ -79,6 +78,7 @@ function Home() {
     "Loding.....";
   }, []);
 
+  const [selected, setSelected] = useState("temp");
   return (
     <div className="bg-white dark:bg-black bg-cover dark:h-screen dark:w-full">
       {/* header  */}
@@ -162,12 +162,45 @@ function Home() {
           <div className="w-full bg-white px-10 rounded border-b dark:bg-black dark:text-white dark:border-gray-500 fixed z-20">
             <Tab.List>
               <div className="flex flex-row justify-start items-center gap-10 ">
-                <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
-                  <div className=" bg-purple-400 text-white rounded-full mr-3 w-8">
-                    <img src={temp} className="h-6 mx-auto " />
-                  </div>
-                  <Tab>รายงานอุณหภูมิ</Tab>
-                </div>
+                <Tab value="temp" onClick={() => setSelected("temp")}>
+                  {selected === "temp" ? (
+                    <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
+                      <div className=" text-white rounded-full w-8">
+                        <img src={temp} className="h-6 mx-auto " />
+                      </div>
+                      <label className=" border-b-2 border-purple-500">
+                        รายงานอุณหภูมิ
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
+                      <div className=" text-white rounded-full w-8">
+                        <img src={temp} className="h-6 mx-auto " />
+                      </div>
+                      <label>รายงานอุณหภูมิ</label>
+                    </div>
+                  )}
+                </Tab>
+
+                <Tab value="oil" onClick={() => setSelected("oil")}>
+                  {selected === "oil" ? (
+                    <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
+                      <div className=" text-white rounded-full w-8">
+                        <img src={oil} className="h-6 mx-auto " />
+                      </div>
+                      <label className=" border-b-2 border-[#628A71]">
+                        รายงานน้ำมัน
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="text-lg hover:text-gray-400 dark:hover:text-gray-600 flex flex-row justify-center">
+                      <div className=" text-white rounded-full w-8">
+                        <img src={oil} className="h-6 mx-auto " />
+                      </div>
+                      <label>รายงานน้ำมัน</label>
+                    </div>
+                  )}
+                </Tab>
               </div>
             </Tab.List>
           </div>
@@ -175,6 +208,10 @@ function Home() {
           <Tab.Panels>
             <Tab.Panel>
               <TempReport selectFleet={selectFleet} />
+            </Tab.Panel>
+
+            <Tab.Panel>
+              <OilReport selectFleet={selectFleet} />
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>

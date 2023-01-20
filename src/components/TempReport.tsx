@@ -108,7 +108,10 @@ function TempReport({ selectFleet }: Props) {
    * Retrive Vehicles
    */
   const { data: vehicleData, error: vehicleError } = useSWR(
-    [`http://localhost:5000/api/fleet/vehicles/${selectFleet?.value}`, config],
+    [
+      `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicles/${selectFleet?.value}`,
+      config,
+    ],
     fetcher
   );
 
@@ -123,7 +126,7 @@ function TempReport({ selectFleet }: Props) {
   const { data: vehicleReportData, error: vehicleReportError } = useSWR(
     [
       shouldFetch
-        ? `http://localhost:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
+        ? `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
         : undefined,
       config,
     ],
@@ -442,87 +445,87 @@ function TempReport({ selectFleet }: Props) {
         {/* Summary gard */}
       </div>
 
-      <section className="container font-mono px-10 ">
-        <div className="w-full mb-8 overflow-hidden rounded-lg shadow-lg">
-          <div className="w-full ">
-            <table className="w-full font-mono text-center">
-              <thead className=" text-md  text-gray-800 bg-[#B3BBA5] dark:bg-[#059669] w-full ">
-                <tr className="flex items-center w-full">
-                  <th className=" w-28 ">ลำดับ </th>
-                  <th className=" w-1/5 ">สถานะ </th>
-                  <th className=" w-1/2 ">สถานที่</th>
-                  <th className=" w-1/5 ">เวลา</th>
-                  <th className=" w-1/5 ">ละติจูด</th>
-                  <th className=" w-1/5 ">ลองติจูด</th>
-                  <th className=" w-1/5 ">ความเร็ว</th>
-                  <th className=" w-1/5 ">
-                    น้ำมัน <br></br> {"(ลิตร)"}
-                  </th>
-                  <th className=" w-1/5 ">
-                    อุณหภูมิ1 <br></br> {"(องศา)"}
-                  </th>
-                  <th className=" w-1/5 ">
-                    อุณหภูมิ2 <br></br> {"(องศา)"}
-                  </th>
-                  {/* <th className=" w-1/5 sticky">Temp3</th>
+      {/* <section className="container font-mono px-10 w-screen "> */}
+      <div className="w-screen  flex items-center justify-center px-10 ">
+        <div className=" w-full rounded-xl shadow-xl overflow-hidden">
+          <table className="w-full font-mono text-center">
+            <thead className=" text-md  text-gray-800 bg-[#B3BBA5] dark:bg-[#059669] w-full ">
+              <tr className="flex items-center w-full">
+                <th className=" w-28 ">ลำดับ </th>
+                <th className=" w-1/5 ">สถานะ </th>
+                <th className=" w-1/2 ">สถานที่</th>
+                <th className=" w-1/5 ">เวลา</th>
+                <th className=" w-1/5 ">ละติจูด</th>
+                <th className=" w-1/5 ">ลองติจูด</th>
+                <th className=" w-1/5 ">ความเร็ว</th>
+                <th className=" w-1/5 ">
+                  น้ำมัน <br></br> {"(ลิตร)"}
+                </th>
+                <th className=" w-1/5 ">
+                  อุณหภูมิ1 <br></br> {"(องศา)"}
+                </th>
+                <th className=" w-1/5 ">
+                  อุณหภูมิ2 <br></br> {"(องศา)"}
+                </th>
+                {/* <th className=" w-1/5 sticky">Temp3</th>
                       <th className=" w-1/5 sticky">Temp4</th> */}
-                  <th className=" w-1/5 ">
-                    ระยะทาง <br></br> {"(กิโลเมตร)"}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white flex flex-col items-center justify-between overflow-y-scroll w-full h-80">
-                {!vehicleReportData
-                  ? null
-                  : vehicleReportData.map((item: IVehicleReport, i: number) => (
-                      <tr className="text-gray-700 flex w-full">
-                        <td className=" w-28 sticky text-sm border">{i + 1}</td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {statusEnToth(item.Status)}
-                        </td>
-                        <td className=" w-1/2 sticky text-sm border">
-                          {item.name}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {moment
-                            .utc(item.local_timestamp)
-                            .format("DD-MM-YYYY HH:mm:ss")}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {parseFloat(item.lat).toFixed(5)}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {parseFloat(item.lon).toFixed(5)}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {item.speed}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {analog(
-                            item.max_fuel_voltage,
-                            item.max_fuel,
-                            item.analog,
-                            item.max_empty_voltage
-                          )}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {item.Temp1}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {item.Temp2}
-                        </td>
-                        <td className=" w-1/5 sticky text-sm border">
-                          {item.distance === null
-                            ? preDistance(vehicleReportData, i)
-                            : parseFloat(item.distance).toFixed(3)}
-                        </td>
-                      </tr>
-                    ))}
-              </tbody>
-            </table>
-          </div>
+                <th className=" w-1/5 ">
+                  ระยะทาง <br></br> {"(กิโลเมตร)"}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white flex flex-col items-center justify-between overflow-y-auto w-full h-80">
+              {!vehicleReportData
+                ? null
+                : vehicleReportData.map((item: IVehicleReport, i: number) => (
+                    <tr className="text-gray-700 flex w-full">
+                      <td className=" w-28 sticky text-sm border">{i + 1}</td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {statusEnToth(item.Status)}
+                      </td>
+                      <td className=" w-1/2 sticky text-sm border">
+                        {item.name}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {moment
+                          .utc(item.local_timestamp)
+                          .format("DD-MM-YYYY HH:mm:ss")}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {parseFloat(item.lat).toFixed(5)}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {parseFloat(item.lon).toFixed(5)}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {item.speed}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {analog(
+                          item.max_fuel_voltage,
+                          item.max_fuel,
+                          item.analog,
+                          item.max_empty_voltage
+                        )}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {item.Temp1}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {item.Temp2}
+                      </td>
+                      <td className=" w-1/5 sticky text-sm border">
+                        {item.distance === null
+                          ? preDistance(vehicleReportData, i)
+                          : parseFloat(item.distance).toFixed(3)}
+                      </td>
+                    </tr>
+                  ))}
+            </tbody>
+          </table>
         </div>
-      </section>
+      </div>
+      {/* </section> */}
     </div>
   );
 }

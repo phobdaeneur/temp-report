@@ -4,6 +4,7 @@ import { login } from "../service/auth";
 import { useNavigate } from "react-router-dom";
 import { StoreContext } from "../store";
 import loginIcon from "../images/loginIcon.svg";
+import cookie1 from "../images/cookie 1.png";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Cookies } from "react-cookie";
@@ -167,7 +168,8 @@ function Login() {
       {/* Modal */}
       {cookies.get("tempReport") !== "true" ? (
         <>
-          <div className=" bg-white flex justify-between items-center px-10 w-screen h-40 overflow-x-hidden overflow-y-auto fixed bottom-0 z-50 outline-none focus:outline-none">
+          <div className=" bg-white flex justify-between items-center px-10 py-5 w-screen h-48 overflow-x-hidden overflow-y-auto fixed bottom-0 z-50 outline-none focus:outline-none">
+            <img src={cookie1} className=" w-32 h-auto pr-4" />
             <div className="flex flex-col gap-2 w-5/6">
               <label className="indent-8 text-2xl font-bold">
                 การเก็บเเละใช้คุกกี้
@@ -175,23 +177,21 @@ function Login() {
               <label className="indent-8 font-mono ">
                 เว็บไซต์นี้ใช้คุกกี้ เพื่อมอบประสบการณ์การใช้งานที่ดีให้กับท่าน
                 และเพื่อพัฒนาคุณภาพการให้บริการเว็บไซต์ที่ตรงต่อความต้องการของท่านมากยิ่งขึ้น
-                ท่านสามารถทราบรายละเอียดเกี่ยวกับคุกกี้ได้ที่
               </label>
               <label className="indent-8 font-mono">
                 This Website uses cookies to provide you with the best
                 experience and to improve the website services in order to
-                better serve your requirements. You can find the details about
-                cookies use on Cookies Policy.
+                better serve your requirements.
               </label>
             </div>
             <div className="flex flex-row items-center justify-center gap-4">
               <button
                 onClick={submit}
-                className=" w-24 h-10 rounded-xl bg-[#20741a] text-sm font-medium text-white hover:text-white select-none hover:bg-[#20741a]/50"
+                className=" w-24 h-10 rounded-xl bg-[#1c6217] text-sm font-medium text-white hover:text-white select-none hover:bg-[#20741a]/50"
               >
                 Accept
               </button>
-              <button className=" w-24 h-10 rounded-xl bg-[#ff5946] text-sm font-medium text-white hover:text-white select-none hover:bg-[#ff5946]/50">
+              <button className=" w-24 h-10 rounded-xl bg-[#b74d41] text-sm font-medium text-white hover:text-white select-none hover:bg-[#ff5946]/50">
                 Regect
               </button>
             </div>

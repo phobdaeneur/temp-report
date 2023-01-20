@@ -1,6 +1,6 @@
 import React, { useState, useContext, Fragment, useRef } from "react";
 import TempReport from "../components/TempReport";
-import OilReport from "../components/OilReport";
+import ReportOil from "../components/ReportOil";
 import HomeTab from "../components/HomeTab";
 import useSWR from "swr"; // swr [Stale While Revalidate] 1. ทำการดึง data จาก cache มาให้เราก่อน (stale) 2. จากนั้นก็ ยิง request ไปที่ API (revalidate) 3. นำข้อมูลจาก API ที่ได้มาอัพเดทกับข้อมูลเดิม
 import Select, { SingleValue } from "react-select";
@@ -51,7 +51,10 @@ function Home() {
    * Retrive Fleets
    */
   const { data: fleetData, error } = useSWR(
-    [`http://localhost:5000/api/fleets/${user?.username}`, config],
+    [
+      `https://geotrackerbackend.kratostracking.com:5000/api/fleets/${user?.username}`,
+      config,
+    ],
     fetcher
   );
 
@@ -211,7 +214,7 @@ function Home() {
             </Tab.Panel>
 
             <Tab.Panel>
-              <OilReport selectFleet={selectFleet} />
+              <ReportOil selectFleet={selectFleet} />
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>

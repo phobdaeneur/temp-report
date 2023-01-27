@@ -9,21 +9,17 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import TextField from "@mui/material/TextField";
 import moment from "moment";
+import excelOilReportByFleet from "../utils/excelOilReportByFleet";
+import excelOilReportByVeh from "../utils/excelOilReportByVeh";
+import { generatePDFOilReportByFleet } from "../utils/pdfOilReportByFleet";
+import { generatePDFOilReportByVeh } from "../utils/pdfOilReportByVeh";
+import excel from "../images/excel.svg";
+import pdf from "../images/pdf.svg";
 
 export interface IVehicle {
   fleet_id: number;
   veh_id: number;
   registration: string;
-}
-
-export interface IVehicleOn {
-  event: string;
-  local_timestamp: string;
-  distance: string;
-  oil_off: string;
-  time_off: string;
-  distance_off: string;
-  resetEvent: string;
 }
 
 export interface IVehicleSelect {
@@ -37,28 +33,7 @@ export interface IVehicleTypeSelect {
   veh_type: string;
 }
 
-export interface IVehicleOnToOff {
-  local_timestamp: string;
-  idx: string;
-  oil: string;
-}
-
-export interface IVehicleFToL {
-  time: string;
-  oil: string;
-  distance: string;
-}
-
-export interface IDataOil {
-  local_timestamp: string;
-  maxOil: string;
-  distance: string;
-  time_off: string;
-  oil_off: string;
-  distance_off: string;
-}
-
-interface IOil {
+export interface IOil {
   dis1: string;
   dis2: string;
   dis3: string;
@@ -77,6 +52,13 @@ interface IOil {
   veh_type_value: string;
   totleDis: string;
   totleOil: string;
+  averageOil: string;
+  veh_id: number;
+}
+
+interface IVehtype {
+  veh_id: number;
+  vehType_id: number;
 }
 
 const fetcher = async (url: string, config: AxiosRequestConfig) => {
@@ -110,9 +92,7 @@ function ReportOil({ selectFleet }: Props) {
   };
   //Radio button
 
-  /**
-   * Retrive Vehicles registration
-   */
+  // Connect API from Vehicles registration
   const { data: vehicleData, error: vehicleError } = useSWR(
     [
       `http://localhost:5000/api/vehicle/registration/${selectFleet?.value}`,
@@ -136,12 +116,11 @@ function ReportOil({ selectFleet }: Props) {
       })
     : undefined;
 
-  // Select dropdown vehicle
+  // Connect API from vehicle type
   const { data: vehicleTypeData, error: vehicleTypeError } = useSWR(
     [`http://localhost:5000/api/vehicleLog/oilVehicleType`, config],
     fetcher
   );
-  // Select dropdown vehicle
 
   // Vehicle type data in dropdown
   const optionVehicleType = vehicleTypeData
@@ -149,11 +128,6 @@ function ReportOil({ selectFleet }: Props) {
         return { value: item.vehTypeId, label: item.veh_type };
       })
     : undefined;
-  const [selectVehicleType, setSelectVehicleType] = useState("0");
-  console.log(optionVehicleType);
-  const handleselectVehicleType = (e: any) => {
-    setSelectVehicleType(e.target.value);
-  };
 
   // Date start
   const [dateStart, setDateStart] = useState<Date | null>(null);
@@ -166,10 +140,11 @@ function ReportOil({ selectFleet }: Props) {
   const dateStartChange = moment(dateStart).format("YYYY-MM-DD HH:mm:ss");
   // Date End
   var dateEnd = new Date(dateStart ? dateStart : 0);
-  dateEnd.setHours(dateEnd.getHours() + 24);
+  dateEnd.setHours(dateEnd.getHours() + 24); // + 24 ชั่วโมง
   // Convert date end
   const dateEndChange = moment(dateEnd).format("YYYY-MM-DD HH:mm:ss");
 
+  //Connect API from oil report all vehicle
   const [shouldFetch, setShouldFetch] = React.useState(false);
   function handleSearchReportByFleet() {
     setShouldFetch(true);
@@ -177,15 +152,15 @@ function ReportOil({ selectFleet }: Props) {
   const { data: oilReportByFleet, error: oilReportByFleetError } = useSWR(
     [
       shouldFetch
-        ? `https://geotrackerbackend.kratostracking.com:5000/api/vehicle/registration/${selectFleet?.value}/${dateStartChange}/${dateEndChange}`
+        ? `http://localhost:5000/api/vehicle/registration/${selectFleet?.value}/${dateStartChange}/${dateEndChange}`
         : undefined,
       config,
     ],
     fetcher
   );
+  //Connect API from oil report all vehicle
 
   const [setting, setSetting] = useState("false");
-  // console.log(oilReportByFleet);
   const display2 = oilReportByFleet
     ? oilReportByFleet.map(() => {
         var arrOil = [];
@@ -265,10 +240,7 @@ function ReportOil({ selectFleet }: Props) {
         return arrOil;
       })
     : undefined;
-
-  // console.log(display2);
   const tableReport2 = display2 ? display2[0] : undefined;
-  // console.log(tableReport2);
 
   const display = tableReport2
     ? tableReport2.map(() => {
@@ -280,6 +252,7 @@ function ReportOil({ selectFleet }: Props) {
             if (tableReport2[i].length == undefined) {
               arr.push({
                 registration: tableReport2[i].registration,
+                veh_id: tableReport2[i].veh_id,
                 timeStart1: "-",
                 timeEnd1: "-",
                 dis1: "-",
@@ -305,6 +278,7 @@ function ReportOil({ selectFleet }: Props) {
             ) {
               arr.push({
                 registration: tableReport2[i][0].registration,
+                veh_id: tableReport2[i][0].veh_id,
                 timeStart1: tableReport2[i][0].timeStart,
                 timeEnd1: tableReport2[i][0].timeEnd,
                 dis1: (
@@ -332,6 +306,7 @@ function ReportOil({ selectFleet }: Props) {
             if (tableReport2[i].length == 2) {
               arr.push({
                 registration: tableReport2[i][0].registration,
+                veh_id: tableReport2[i][0].veh_id,
                 timeStart1: tableReport2[i][0].timeStart,
                 timeEnd1: tableReport2[i][0].time_off,
                 dis1: (
@@ -364,6 +339,7 @@ function ReportOil({ selectFleet }: Props) {
             if (tableReport2[i].length > 2) {
               arr.push({
                 registration: tableReport2[i][0].registration,
+                veh_id: tableReport2[i][0].veh_id,
                 timeStart1: tableReport2[i][0].timeStart,
                 timeEnd1: tableReport2[i][0].time_off,
                 dis1: (
@@ -405,14 +381,13 @@ function ReportOil({ selectFleet }: Props) {
       })
     : undefined;
   const tableReport = display ? display[0] : undefined;
-  // console.log(display);
-  console.log(tableReport);
 
-  const [valueOil, setValueOil] = useState<string>();
+  const [valueOil, setValueOil] = useState<string>(); //เก็บค่าราคาน้ำมันที่ผู้ใช้งานระบุ
   const handleChangeValue = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValueOil(event.target.value);
   };
 
+  //Connect API from oil report select vehicle
   const [shouldFetchVeh, setShouldFetchVeh] = React.useState(false);
   function handleSearchReportByVeh() {
     setShouldFetchVeh(true);
@@ -420,64 +395,201 @@ function ReportOil({ selectFleet }: Props) {
   const { data: oilReportByVeh, error: oilReportByVehError } = useSWR(
     [
       shouldFetchVeh
-        ? `https://geotrackerbackend.kratostracking.com:5000/api/vehicle/oilreportByVehicle/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
+        ? `http://localhost:5000/api/vehicle/oilreportByVehicle/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
         : undefined,
       config,
     ],
     fetcher
   );
+  //Connect API from oil report select vehicle
 
-  const displayVeh = oilReportByVeh
+  const displayVeh2 = oilReportByVeh
     ? oilReportByVeh.map(() => {
-        var arr = [];
+        var arrOil = [];
         if (oilReportByVeh == undefined || null) {
           return;
         } else {
-          if (oilReportByVeh.length == 1) {
+          var arr2 = [];
+          var arr = [];
+          for (let j = 0; j < oilReportByVeh.length; j++) {
+            if (oilReportByVeh[j].local_timestamp == 0) {
+              arr.push({
+                disEnd: oilReportByVeh[j].disEnd,
+                disStart: oilReportByVeh[j].disStart,
+                distance: oilReportByVeh[j].distance,
+                distance_off: oilReportByVeh[j].distance_off,
+                local_timestamp: oilReportByVeh[j].local_timestamp,
+                maxOil: oilReportByVeh[j].maxOil,
+                oilEnd: oilReportByVeh[j].oilEnd,
+                oilStart: oilReportByVeh[j].oilStart,
+                oil_off: oilReportByVeh[j].oil_off,
+                timeEnd: oilReportByVeh[j].timeEnd,
+                timeStart: oilReportByVeh[j].timeStart,
+                time_off: oilReportByVeh[j].time_off,
+                veh_id: oilReportByVeh[j].veh_id,
+                veh_type: oilReportByVeh[j].veh_type,
+                veh_type_value: oilReportByVeh[j].veh_type_value,
+              });
+            } else {
+              arr2.push({
+                disEnd: oilReportByVeh[j].disEnd,
+                disStart: oilReportByVeh[j].disStart,
+                distance: oilReportByVeh[j].distance,
+                distance_off: oilReportByVeh[j].distance_off,
+                local_timestamp: oilReportByVeh[j].local_timestamp,
+                maxOil: oilReportByVeh[j].maxOil,
+                oilEnd: oilReportByVeh[j].oilEnd,
+                oilStart: oilReportByVeh[j].oilStart,
+                oil_off: oilReportByVeh[j].oil_off,
+                timeEnd: oilReportByVeh[j].timeEnd,
+                timeStart: oilReportByVeh[j].timeStart,
+                time_off: oilReportByVeh[j].time_off,
+                veh_id: oilReportByVeh[j].veh_id,
+                veh_type: oilReportByVeh[j].veh_type,
+                veh_type_value: oilReportByVeh[j].veh_type_value,
+              });
+            }
+          }
+          arr2.push(arr ? arr[0] : undefined);
+          arrOil.push(arr2);
+        }
+        return arrOil;
+      })
+    : undefined;
+  const tableReportVeh2 = displayVeh2 ? displayVeh2[0] : undefined;
+  // console.log(tableReportVeh2);
+
+  const displayVeh = tableReportVeh2
+    ? tableReportVeh2.map(() => {
+        var arr = [];
+        if (tableReportVeh2 == undefined || null) {
+          return;
+        } else {
+          if (tableReportVeh2[0].length == 1) {
+            if (tableReportVeh2[0][0].timeStart == 0) {
+              arr.push({
+                registration: selectVehicle?.label,
+                timeStart1: "-",
+                timeEnd1: "-",
+                dis1: "-",
+                oil1: "-",
+                timeStart2: "-",
+                timeEnd2: "-",
+                dis2: "-",
+                oil2: "-",
+                timeStart3: "-",
+                timeEnd3: "-",
+                dis3: "-",
+                oil3: "-",
+                average: 1,
+                veh_type: tableReportVeh2[0][0].veh_type,
+                veh_type_value: tableReportVeh2[0][0].veh_type_value,
+                totleDis: "-",
+                totleOil: "-",
+              });
+            } else {
+              arr.push({
+                registration: selectVehicle?.label,
+                timeStart1: tableReportVeh2[0][0].timeStart,
+                timeEnd1: tableReportVeh2[0][0].timeEnd,
+                dis1: (
+                  tableReportVeh2[0][0].disEnd - tableReportVeh2[0][0].disStart
+                ).toFixed(3),
+                oil1:
+                  tableReportVeh2[0][0].oilStart - tableReportVeh2[0][0].oilEnd,
+                timeStart2: "-",
+                timeEnd2: "-",
+                dis2: "-",
+                oil2: "-",
+                timeStart3: "-",
+                timeEnd3: "-",
+                dis3: "-",
+                oil3: "-",
+                average: 1,
+                veh_type: tableReportVeh2[0][0].veh_type,
+                veh_type_value: tableReportVeh2[0][0].veh_type_value,
+                totleDis: (
+                  tableReportVeh2[0][0].disEnd - tableReportVeh2[0][0].disStart
+                ).toFixed(3),
+                totleOil:
+                  tableReportVeh2[0][0].oilStart - tableReportVeh2[0][0].oilEnd,
+              });
+            }
+          }
+          if (tableReportVeh2[0].length == 2) {
             arr.push({
-              // registration: oilReportByFleet[i].registration,
-              timeStart1: oilReportByVeh[0].timeStart,
-              timeEnd1: oilReportByVeh[0].time_off,
+              registration: selectVehicle?.label,
+              timeStart1: tableReportVeh2[0][0].timeStart,
+              timeEnd1: tableReportVeh2[0][0].time_off,
               dis1: (
-                oilReportByVeh[0].distance_off - oilReportByVeh[0].disStart
+                tableReportVeh2[0][0].distance_off -
+                tableReportVeh2[0][0].disStart
               ).toFixed(3),
-              oil1: oilReportByVeh[0].oilStart - oilReportByVeh[0].oil_off,
-              timeStart2: oilReportByVeh[0].local_timestamp,
-              timeEnd2: oilReportByVeh[0].timeEnd,
+              oil1:
+                tableReportVeh2[0][0].oilStart - tableReportVeh2[0][0].oil_off,
+              timeStart2: tableReportVeh2[0][0].local_timestamp,
+              timeEnd2: tableReportVeh2[0][0].timeEnd,
               dis2: (
-                oilReportByVeh[0].disEnd - oilReportByVeh[0].distance
+                tableReportVeh2[0][0].disEnd - tableReportVeh2[0][0].distance
               ).toFixed(3),
-              oil2: oilReportByVeh[0].maxOil - oilReportByVeh[0].oilEnd,
+              oil2: tableReportVeh2[0][0].maxOil - tableReportVeh2[0][0].oilEnd,
               timeStart3: "-",
               timeEnd3: "-",
               dis3: "-",
               oil3: "-",
               average: 2,
+              veh_type: tableReportVeh2[0][0].veh_type,
+              veh_type_value: tableReportVeh2[0][0].veh_type_value,
+              totleDis:
+                tableReportVeh2[0][0].distance_off -
+                tableReportVeh2[0][0].disStart +
+                (tableReportVeh2[0][0].disEnd - tableReportVeh2[0][0].distance),
+              totleOil:
+                tableReportVeh2[0][0].oilStart -
+                tableReportVeh2[0][0].oil_off +
+                (tableReportVeh2[0][0].maxOil - tableReportVeh2[0][0].oilEnd),
             });
           }
-          if (oilReportByVeh.length > 1) {
+          if (tableReportVeh2[0].length > 2) {
             arr.push({
-              // registration: oilReportByFleet[i][0].registration,
-              timeStart1: oilReportByFleet[0].timeStart,
-              timeEnd1: oilReportByFleet[0].time_off,
+              registration: selectVehicle?.label,
+              timeStart1: tableReportVeh2[0][0].timeStart,
+              timeEnd1: tableReportVeh2[0][0].time_off,
               dis1: (
-                oilReportByFleet[0].distance_off - oilReportByFleet[0].disStart
+                tableReportVeh2[0][0].distance_off -
+                tableReportVeh2[0][0].disStart
               ).toFixed(3),
-              oil1: oilReportByFleet[0].oilStart - oilReportByFleet[0].oil_off,
+              oil1:
+                tableReportVeh2[0][0].oilStart - tableReportVeh2[0][0].oil_off,
 
-              timeStart2: oilReportByFleet[0].local_timestamp,
-              timeEnd2: oilReportByFleet[1].time_off,
+              timeStart2: tableReportVeh2[0][0].local_timestamp,
+              timeEnd2: tableReportVeh2[0][1].time_off,
               dis2: (
-                oilReportByFleet[1].distance_off - oilReportByFleet[0].distance
+                tableReportVeh2[0][1].distance_off -
+                tableReportVeh2[0][0].distance
               ).toFixed(3),
-              oil2: oilReportByFleet[0].maxOil - oilReportByFleet[1].oil_off,
-              timeStart3: oilReportByFleet[1].local_timestamp,
-              timeEnd3: oilReportByFleet[0].timeEnd,
+              oil2:
+                tableReportVeh2[0][0].maxOil - tableReportVeh2[0][1].oil_off,
+              timeStart3: tableReportVeh2[0][1].local_timestamp,
+              timeEnd3: tableReportVeh2[0][0].timeEnd,
               dis3: (
-                oilReportByFleet[1].disEnd - oilReportByFleet[0].distance
+                tableReportVeh2[0][1].disEnd - tableReportVeh2[0][0].distance
               ).toFixed(3),
-              oil3: oilReportByFleet[1].maxOil - oilReportByFleet[0].oilEnd,
+              oil3: tableReportVeh2[0][1].maxOil - tableReportVeh2[0][0].oilEnd,
               average: 3,
+              veh_type: tableReportVeh2[0][0].veh_type,
+              veh_type_value: tableReportVeh2[0][0].veh_type_value,
+              totleDis:
+                tableReportVeh2[0][0].distance_off -
+                tableReportVeh2[0][0].disStart +
+                (tableReportVeh2[0][1].distance_off -
+                  tableReportVeh2[0][0].distance) +
+                (tableReportVeh2[0][1].disEnd - tableReportVeh2[0][0].distance),
+              totleOil:
+                tableReportVeh2[0][0].oilStart -
+                tableReportVeh2[0][0].oil_off +
+                (tableReportVeh2[0][0].maxOil - tableReportVeh2[0][1].oil_off) +
+                (tableReportVeh2[0][1].maxOil - tableReportVeh2[0][0].oilEnd),
             });
           }
         }
@@ -485,6 +597,86 @@ function ReportOil({ selectFleet }: Props) {
       })
     : undefined;
   const tableReportVeh = displayVeh ? displayVeh[0] : undefined;
+  // console.log(displayVeh);
+
+  const dateTime = moment(dateStart).format("DD-MM-YYYY");
+  const fileName = dateTime + " " + selectFleet?.label;
+  const fileNameVeh = dateTime + " " + selectVehicle?.label;
+
+  function handleGenExcelByFleet() {
+    console.log("fire Gen Excel");
+    excelOilReportByFleet(
+      tableReport,
+      fileName,
+      selectFleet?.label,
+      dateStartChange,
+      dateEndChange,
+      valueOil
+    );
+  }
+
+  function handleGenExcelByVeh() {
+    console.log("fire Gen Excel");
+    excelOilReportByVeh(
+      tableReportVeh,
+      fileNameVeh,
+      selectFleet?.label,
+      selectVehicle?.label,
+      dateStartChange,
+      dateEndChange,
+      valueOil
+    );
+  }
+
+  function handleGenPDFByFleet() {
+    console.log("fire Gen PDF");
+    generatePDFOilReportByFleet(
+      tableReport,
+      fileName,
+      selectFleet?.label,
+      dateStartChange,
+      dateEndChange,
+      valueOil
+    );
+  }
+
+  function handleGenPDFByVeh() {
+    console.log("fire Gen PDF");
+    generatePDFOilReportByVeh(
+      tableReportVeh,
+      fileNameVeh,
+      selectFleet?.label,
+      selectVehicle?.label,
+      dateStartChange,
+      dateEndChange,
+      valueOil
+    );
+  }
+
+  const [credentials, setCredentials] = useState<IVehtype>({
+    veh_id: 0,
+    vehType_id: 0,
+  });
+
+  //Insert or update vehicle type
+  useEffect(() => {
+    const result = axios
+      .get(
+        `http://localhost:5000/api/vehicle/vehVehType/${credentials.veh_id}/${credentials.vehType_id}`,
+        config
+      )
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, [credentials]);
+
+  //Function auto refresh page
+  function refreshPage() {
+    window.location.reload();
+  }
 
   return (
     <div className="flex flex-col dark:bg-[#000000] gap-10 justify-center items-center">
@@ -559,17 +751,27 @@ function ReportOil({ selectFleet }: Props) {
             {/* Date start */}
 
             {/* Button search */}
+            {/* selected === "no" เเสดงข้อมูลของยานยนต์ที่เลือก */}
             {selected == "no" ? (
               <>
                 <button
                   className=" w-96 bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-[#628A71] hover:border-[#547762] hover:bg-[#628A71] hover:text-white shadow-md shadow-[#628A71] dark:shadow-[#628A71] py-2 px-6 inline-flex items-center justify-center"
-                  disabled={shouldFetch}
-                  onClick={() => {
-                    handleSearchReportByVeh();
-                    // setIndexTime(indexTime + 1);
-                  }}
+                  // disabled={shouldFetch}
+                  onClick={handleSearchReportByVeh}
                 >
                   <span className="mx-auto">ค้นหาโดยยานยนต์</span>
+                </button>
+                <button
+                  className=" w-auto bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-green-500 hover:border-green-600 hover:bg-green-200 hover:text-white shadow-md py-2 px-6 inline-flex items-center"
+                  onClick={handleGenExcelByVeh}
+                >
+                  <img src={excel} className=" h-6 mx-auto " />
+                </button>
+                <button
+                  className=" w-auto bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-red-500 hover:border-red-600 hover:bg-red-200 hover:text-white shadow-md py-2 px-6 inline-flex items-center"
+                  onClick={handleGenPDFByVeh}
+                >
+                  <img src={pdf} className=" h-6 mx-auto " />
                 </button>
               </>
             ) : (
@@ -590,6 +792,18 @@ function ReportOil({ selectFleet }: Props) {
                 >
                   <span className="mx-auto">ตั้งค่าประเภทยานยนต์</span>
                 </button>
+                <button
+                  className=" w-auto bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-green-500 hover:border-green-600 hover:bg-green-200 hover:text-white shadow-md py-2 px-6 inline-flex items-center"
+                  onClick={handleGenExcelByFleet}
+                >
+                  <img src={excel} className=" h-6 mx-auto " />
+                </button>
+                <button
+                  className=" w-auto bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-red-500 hover:border-red-600 hover:bg-red-200 hover:text-white shadow-md py-2 px-6 inline-flex items-center"
+                  onClick={handleGenPDFByFleet}
+                >
+                  <img src={pdf} className=" h-6 mx-auto " />
+                </button>
               </>
             )}
           </div>
@@ -597,26 +811,47 @@ function ReportOil({ selectFleet }: Props) {
       </div>
 
       {/* Setting vehicle type */}
+      {/* setting === "true" เเสดงหน้าตั้งค่าประเภทยานยนต์ */}
       {setting === "true" ? (
         <div className="flex flex-col items-center justify-center gap-5 pb-10">
           <div className=" grid grid-cols-4 items-center justify-center gap-3">
             {tableReport
               ? tableReport.map((item: IOil) => (
                   <div className="flex flex-row items-center justify-between w-60 xl:w-80 border rounded-lg py-3 px-5">
-                    <label>{item.registration}</label>
+                    <input
+                      className=" dark:text-white w-28 hidden"
+                      name="veh_id"
+                      type="text"
+                      value={item.veh_id}
+                      // onChange={handleType}
+                      disabled
+                    />
+                    <label className="dark:text-white">
+                      {item.registration}
+                    </label>
                     <select
-                      name="vehType"
+                      name="vehType_id"
                       id="vehType"
                       className="font-mono text-xs text-center text-black dark:bg-[#000000] dark:text-white"
-                      // value={selectVehicleType}
-                      // onChange={handleselectVehicleType}
+                      onChange={(e) =>
+                        setCredentials((prevState) => ({
+                          ...prevState,
+                          [e.target.name]: parseInt(e.target.value),
+                          veh_id: item.veh_id,
+                        }))
+                      }
                     >
                       {item.veh_type.toString() === "0" ? (
                         <option hidden disabled selected value="0">
                           เลือกประเภทของยานยนต์
                         </option>
                       ) : (
-                        <option value={item.veh_type_value}>
+                        <option
+                          hidden
+                          disabled
+                          selected
+                          value={item.veh_type_value}
+                        >
                           {item.veh_type}
                         </option>
                       )}
@@ -630,21 +865,26 @@ function ReportOil({ selectFleet }: Props) {
                 ))
               : null}
           </div>
-          <button
-            className=" w-60 bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-[#c88334] hover:border-[#a0692a] hover:bg-[#c88334] hover:text-white shadow-md shadow-[#c88334] dark:shadow-[#c88334] py-2 px-6 inline-flex items-center justify-center"
-            //disabled={shouldFetch}
-            onClick={() => {
-              setSetting("false");
-            }}
-          >
-            <span className="mx-auto">บันทึก</span>
-          </button>
+          <div className="flex flex-row items-center justify-center gap-5">
+            <button
+              className=" w-60 bg-white tracking-wide text-gray-800 font-bold rounded border-b-2 border-[#c88334] hover:border-[#a0692a] hover:bg-[#c88334] hover:text-white shadow-md shadow-[#c88334] dark:shadow-[#c88334] py-2 px-6 inline-flex items-center justify-center"
+              //disabled={shouldFetch}
+              onClick={() => {
+                setSetting("false");
+                setShouldFetch(false);
+                refreshPage();
+              }}
+            >
+              <span className="mx-auto">ย้อนกลับ</span>
+            </button>
+          </div>
         </div>
       ) : (
         <>
-          {/* Display report*/}
+          {/* Display report in table*/}
           {selected === "yes" ? (
             <section className="container mx-auto font-mono">
+              {/* selected === "yes" เเสดงข้อมูลของยานยนต์ทั้งหมด */}
               <label className="text-xl dark:text-white flex items-center justify-center pb-3">
                 Oil report all vehicles
               </label>
@@ -654,9 +894,6 @@ function ReportOil({ selectFleet }: Props) {
                     <div className="flex flex-col items-center justify-center gap-2">
                       <label className="text-xl dark:text-white">
                         โปรดระบุข้อมูลให้ครบถ้วนเเล้วกดปุ่มค้นหา
-                      </label>
-                      <label className="text-xl dark:text-white">
-                        หรือไม่มียานยนต์ที่เติมน้ำมันในวันที่ท่านเลือกโปรดระบุวันเวลาเเละกดค้นหาใหม่อีกครั้ง
                       </label>
                     </div>
                   ) : (
@@ -747,17 +984,23 @@ function ReportOil({ selectFleet }: Props) {
                                   {item.oil1 == "-" ? "-" : item.oil1}
                                 </td>
                                 <td className="px-2 py-2 text-xs border  border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
-                                  {item.oil1 == "-"
-                                    ? "-"
-                                    : isNaN(
-                                        parseFloat(item.dis1) /
-                                          parseInt(item.oil1)
-                                      )
-                                    ? "0.000"
-                                    : (
-                                        parseFloat(item.dis1) /
-                                        parseInt(item.oil1)
-                                      ).toFixed(3)}
+                                  {item.oil1 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {item.oil1 == "-"
+                                        ? "-"
+                                        : isNaN(
+                                            parseFloat(item.dis1) /
+                                              parseInt(item.oil1)
+                                          )
+                                        ? "0.000"
+                                        : (
+                                            parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
                                 </td>
 
                                 {/* section 2 */}
@@ -782,12 +1025,18 @@ function ReportOil({ selectFleet }: Props) {
                                   {item.oil2}
                                 </td>
                                 <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
-                                  {item.oil2.toString() == "-"
-                                    ? "-"
-                                    : (
-                                        parseFloat(item.dis2) /
-                                        parseInt(item.oil2)
-                                      ).toFixed(3)}
+                                  {item.oil2 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {item.oil2.toString() == "-"
+                                        ? "-"
+                                        : (
+                                            parseFloat(item.dis2) /
+                                            Math.abs(parseInt(item.oil2))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
                                 </td>
 
                                 {/* section 3 */}
@@ -812,31 +1061,41 @@ function ReportOil({ selectFleet }: Props) {
                                   {item.oil3}
                                 </td>
                                 <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
-                                  {isNaN(
-                                    parseFloat(item.dis3) / parseInt(item.oil3)
-                                  )
-                                    ? "-"
-                                    : (
+                                  {item.oil3 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {isNaN(
                                         parseFloat(item.dis3) /
-                                        parseInt(item.oil3)
-                                      ).toFixed(3)}
+                                          parseInt(item.oil3)
+                                      )
+                                        ? "-"
+                                        : (
+                                            parseFloat(item.dis3) /
+                                            Math.abs(parseInt(item.oil3))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
                                 </td>
 
                                 <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
-                                  {item.oil1 == "-" ? (
+                                  {item.oil1 == "-" ||
+                                  item.oil1 == "0" ||
+                                  item.oil2 == "0" ||
+                                  item.oil3 == "0" ? (
                                     "-"
                                   ) : (
                                     <>
                                       {item.oil2 == "-" ? (
                                         isNaN(
-                                          parseInt(item.dis1) /
-                                            parseInt(item.oil1)
+                                          parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
                                         ) ? (
                                           "0.000"
                                         ) : (
                                           (
-                                            parseInt(item.dis1) /
-                                            parseInt(item.oil1)
+                                            parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
                                           ).toFixed(3)
                                         )
                                       ) : (
@@ -844,35 +1103,53 @@ function ReportOil({ selectFleet }: Props) {
                                           {item.oil3 == "-"
                                             ? (
                                                 (isNaN(
-                                                  parseInt(item.dis1) /
-                                                    parseInt(item.oil1)
+                                                  parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    )
                                                 )
                                                   ? 0 +
-                                                    parseInt(item.dis2) /
-                                                      parseInt(item.oil2)
-                                                  : parseInt(item.dis1) /
-                                                      parseInt(item.oil1) +
-                                                    parseInt(item.dis2) /
-                                                      parseInt(item.oil2)) /
-                                                item.average
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )
+                                                  : parseFloat(item.dis1) /
+                                                      Math.abs(
+                                                        parseInt(item.oil1)
+                                                      ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) / item.average
                                               ).toFixed(3)
                                             : (
                                                 (isNaN(
-                                                  parseInt(item.dis1) /
-                                                    parseInt(item.oil1)
+                                                  parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    )
                                                 )
                                                   ? 0 +
-                                                    parseInt(item.dis2) /
-                                                      parseInt(item.oil2) +
-                                                    parseInt(item.dis3) /
-                                                      parseInt(item.oil3)
-                                                  : parseInt(item.dis1) /
-                                                      parseInt(item.oil1) +
-                                                    parseInt(item.dis2) /
-                                                      parseInt(item.oil2) +
-                                                    parseInt(item.dis3) /
-                                                      parseInt(item.oil3)) /
-                                                item.average
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      ) +
+                                                    parseFloat(item.dis3) /
+                                                      Math.abs(
+                                                        parseInt(item.oil3)
+                                                      )
+                                                  : parseFloat(item.dis1) /
+                                                      Math.abs(
+                                                        parseInt(item.oil1)
+                                                      ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      ) +
+                                                    parseFloat(item.dis3) /
+                                                      Math.abs(
+                                                        parseInt(item.oil3)
+                                                      )) / item.average
                                               ).toFixed(3)}
                                         </>
                                       )}
@@ -891,41 +1168,227 @@ function ReportOil({ selectFleet }: Props) {
 
                                 {/* function บริษัทกำหนด */}
                                 <>
-                                  {item.oil1 == "-" ? (
-                                    "-"
+                                  {item.oil1 == "-" ||
+                                  item.oil1 == "0" ||
+                                  item.oil2 == "0" ||
+                                  item.oil3 == "0" ||
+                                  item.veh_type == "0" ? (
+                                    <td className="text-black text-sm border dark:border-gray-600">
+                                      -
+                                    </td>
                                   ) : (
                                     <>
-                                      {(
-                                        (parseFloat(item.totleDis) /
-                                          parseFloat(item.veh_type_value) -
-                                          parseInt(item.totleOil)) *
-                                        parseFloat(valueOil ? valueOil : "0")
-                                      )
-                                        .toString()
-                                        .substring(1, 0) == "-" ? (
-                                        <td className="text-red-500 text-sm border dark:border-gray-600">
-                                          {(
-                                            (parseFloat(item.totleDis) /
-                                              parseFloat(item.veh_type_value) -
-                                              parseInt(item.totleOil)) *
+                                      {item.oil2 == "-" ? (
+                                        isNaN(
+                                          parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                        ) ? (
+                                          "0.000"
+                                        ) : (
+                                            (parseFloat(item.dis1) /
+                                              Math.abs(parseInt(item.oil1)) -
+                                              parseFloat(item.veh_type_value)) *
                                             parseFloat(
                                               valueOil ? valueOil : "0"
                                             )
-                                          ).toFixed(3)}
-                                        </td>
+                                          )
+                                            .toString()
+                                            .substring(1, 0) == "-" ? (
+                                          <td className="text-red-500 text-sm border dark:border-gray-600">
+                                            {(
+                                              (parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            ).toFixed(1)}
+                                          </td>
+                                        ) : (
+                                          <td className="text-black text-sm border dark:border-gray-600">
+                                            {(
+                                              (parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            ).toFixed(1)}
+                                          </td>
+                                        )
                                       ) : (
-                                        <td className="text-sm border dark:border-gray-600">
-                                          {(
-                                            (parseFloat(item.totleDis) /
-                                              parseFloat(item.veh_type_value) -
-                                              parseInt(item.totleOil)) *
-                                            parseFloat(
-                                              valueOil ? valueOil : "0"
+                                        <>
+                                          {item.oil3 == "-" ? (
+                                            (
+                                              ((parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) +
+                                                parseFloat(item.dis2) /
+                                                  Math.abs(
+                                                    parseInt(item.oil2)
+                                                  )) /
+                                                item.average -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
                                             )
-                                          ).toFixed(3)}
-                                        </td>
+                                              .toString()
+                                              .substring(1, 0) == "-" ? (
+                                              <td className="text-red-500 text-sm border dark:border-gray-600">
+                                                {(
+                                                  ((parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) /
+                                                    item.average -
+                                                    parseFloat(
+                                                      item.veh_type_value
+                                                    )) *
+                                                  parseFloat(
+                                                    valueOil ? valueOil : "0"
+                                                  )
+                                                ).toFixed(1)}
+                                              </td>
+                                            ) : (
+                                              <td className="text-black text-sm border dark:border-gray-600">
+                                                {(
+                                                  ((parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) /
+                                                    item.average -
+                                                    parseFloat(
+                                                      item.veh_type_value
+                                                    )) *
+                                                  parseFloat(
+                                                    valueOil ? valueOil : "0"
+                                                  )
+                                                ).toFixed(1)}
+                                              </td>
+                                            )
+                                          ) : (
+                                              ((parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) +
+                                                parseFloat(item.dis2) /
+                                                  Math.abs(
+                                                    parseInt(item.oil2)
+                                                  ) +
+                                                parseFloat(item.dis3) /
+                                                  Math.abs(
+                                                    parseInt(item.oil3)
+                                                  )) /
+                                                item.average -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            )
+                                              .toString()
+                                              .substring(1, 0) == "-" ? (
+                                            <td className="text-red-500 text-sm border dark:border-gray-600">
+                                              {(
+                                                ((parseFloat(item.dis1) /
+                                                  Math.abs(
+                                                    parseInt(item.oil1)
+                                                  ) +
+                                                  parseFloat(item.dis2) /
+                                                    Math.abs(
+                                                      parseInt(item.oil2)
+                                                    ) +
+                                                  parseFloat(item.dis3) /
+                                                    Math.abs(
+                                                      parseInt(item.oil3)
+                                                    )) /
+                                                  item.average -
+                                                  parseFloat(
+                                                    item.veh_type_value
+                                                  )) *
+                                                parseFloat(
+                                                  valueOil ? valueOil : "0"
+                                                )
+                                              ).toFixed(1)}
+                                            </td>
+                                          ) : (
+                                            <td className="text-black text-sm border dark:border-gray-600">
+                                              {(
+                                                ((parseFloat(item.dis1) /
+                                                  Math.abs(
+                                                    parseInt(item.oil1)
+                                                  ) +
+                                                  parseFloat(item.dis2) /
+                                                    Math.abs(
+                                                      parseInt(item.oil2)
+                                                    ) +
+                                                  parseFloat(item.dis3) /
+                                                    Math.abs(
+                                                      parseInt(item.oil3)
+                                                    )) /
+                                                  item.average -
+                                                  parseFloat(
+                                                    item.veh_type_value
+                                                  )) *
+                                                parseFloat(
+                                                  valueOil ? valueOil : "0"
+                                                )
+                                              ).toFixed(1)}
+                                            </td>
+                                          )}
+                                        </>
                                       )}
                                     </>
+                                    // <>
+                                    //   {(
+                                    //     (parseFloat(
+                                    //       (
+                                    //         parseFloat(item.totleDis) /
+                                    //         parseInt(item.totleOil)
+                                    //       )
+                                    //         .toFixed(3)
+                                    //         .toString()
+                                    //     ) -
+                                    //       parseFloat(item.veh_type_value)) *
+                                    //     parseFloat(valueOil ? valueOil : "0")
+                                    //   )
+                                    //     .toString()
+                                    //     .substring(1, 0) == "-" ? (
+                                    //     <td className="text-red-500 text-sm border dark:border-gray-600">
+
+                                    //     </td>
+                                    //   ) : (
+                                    //     <td className="text-sm border dark:border-gray-600">
+                                    //       {(
+                                    //         (parseFloat(
+                                    //           (
+                                    //             parseFloat(item.totleDis) /
+                                    //             parseInt(item.totleOil)
+                                    //           )
+                                    //             .toFixed(3)
+                                    //             .toString()
+                                    //         ) -
+                                    //           parseFloat(item.veh_type_value)) *
+                                    //         parseFloat(
+                                    //           valueOil ? valueOil : "0"
+                                    //         )
+                                    //       ).toFixed(3)}
+                                    //     </td>
+                                    //   )}
+                                    // </>
                                   )}
                                 </>
                               </tr>
@@ -939,6 +1402,7 @@ function ReportOil({ selectFleet }: Props) {
             </section>
           ) : (
             <section className="container mx-auto font-mono">
+              {/* selected === "no" เเสดงข้อมูลของยานยนต์ที่เลือก */}
               <label className="text-xl dark:text-white flex items-center justify-center pb-3">
                 Oil report select vehicle
               </label>
@@ -1016,166 +1480,452 @@ function ReportOil({ selectFleet }: Props) {
                         </tr>
                       </thead>
                       <tbody>
-                        {tableReportVeh ? (
-                          tableReportVeh.map((item: IOil, i: number) => (
-                            <tr className="text-gray-700 text-center dark:text-white">
-                              <td className="px-2 py-2 text-xs border">
-                                {i + 1}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {selectVehicle?.label}
-                              </td>
-                              <td className="px-2 py-2 text-xs border ">
-                                {moment
-                                  .utc(item.timeStart1)
-                                  .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {moment
-                                  .utc(item.timeEnd1)
-                                  .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.dis1}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.oil1}
-                              </td>
-                              <td className="px-2 py-2 text-xs border  border-r-2 border-r-black dark:border-r-white">
-                                {isNaN(
-                                  parseInt(item.dis1) / parseInt(item.oil1)
-                                )
-                                  ? "0.000"
-                                  : (
-                                      parseInt(item.dis1) / parseInt(item.oil1)
-                                    ).toFixed(3)}
-                              </td>
+                        {tableReportVeh
+                          ? tableReportVeh.map((item: IOil, i: number) => (
+                              <tr className="text-gray-700 text-center dark:text-white ">
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {i + 1}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.registration}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeStart1 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeStart1)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeEnd1 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeEnd1)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.dis1}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.oil1 == "-" ? "-" : item.oil1}
+                                </td>
+                                <td className="px-2 py-2 text-xs border  border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
+                                  {item.oil1 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {item.oil1 == "-"
+                                        ? "-"
+                                        : isNaN(
+                                            parseFloat(item.dis1) /
+                                              parseInt(item.oil1)
+                                          )
+                                        ? "0.000"
+                                        : (
+                                            parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
+                                </td>
 
-                              {/* section 2 */}
-                              <td className="px-2 py-2 text-xs border">
-                                {moment
-                                  .utc(item.timeStart2)
-                                  .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {moment
-                                  .utc(item.timeEnd2)
-                                  .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.dis2}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.oil2}
-                              </td>
-                              <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white">
-                                {(
-                                  parseInt(item.dis2) / parseInt(item.oil2)
-                                ).toFixed(3)}
-                              </td>
+                                {/* section 2 */}
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeStart2 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeStart2)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeEnd2 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeEnd2)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.dis2 == "-" ? "-" : item.dis2}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.oil2}
+                                </td>
+                                <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
+                                  {item.oil2 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {item.oil2.toString() == "-"
+                                        ? "-"
+                                        : (
+                                            parseFloat(item.dis2) /
+                                            Math.abs(parseInt(item.oil2))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
+                                </td>
 
-                              {/* section 3 */}
-                              <td className="px-2 py-2 text-xs border">
-                                {item.timeStart3 == "-"
-                                  ? "-"
-                                  : moment
-                                      .utc(item.timeStart3)
-                                      .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.timeStart3 == "-"
-                                  ? "-"
-                                  : moment
-                                      .utc(item.timeEnd3)
-                                      .format("DD-MM-YYYY HH:mm:ss")}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.dis3}
-                              </td>
-                              <td className="px-2 py-2 text-xs border">
-                                {item.oil3}
-                              </td>
-                              <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white">
-                                {isNaN(
-                                  parseInt(item.dis3) / parseInt(item.oil3)
-                                )
-                                  ? "-"
-                                  : (
-                                      parseInt(item.dis3) / parseInt(item.oil3)
-                                    ).toFixed(3)}
-                              </td>
-
-                              <td className="px-2 py-2 text-xs border">
-                                {item.oil3 == "-"
-                                  ? (
-                                      (isNaN(
-                                        parseInt(item.dis1) /
-                                          parseInt(item.oil1)
+                                {/* section 3 */}
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeStart3 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeStart3)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.timeEnd3 == "-"
+                                    ? "-"
+                                    : moment
+                                        .utc(item.timeEnd3)
+                                        .format("DD-MM-YYYY HH:mm:ss")}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.dis3}
+                                </td>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.oil3}
+                                </td>
+                                <td className="px-2 py-2 text-xs border border-r-2 border-r-black dark:border-r-white dark:border-gray-600 ">
+                                  {item.oil3 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {isNaN(
+                                        parseFloat(item.dis3) /
+                                          parseInt(item.oil3)
                                       )
-                                        ? 0 +
-                                          parseInt(item.dis2) /
-                                            parseInt(item.oil2)
-                                        : parseInt(item.dis1) /
-                                            parseInt(item.oil1) +
-                                          parseInt(item.dis2) /
-                                            parseInt(item.oil2)) / item.average
-                                    ).toFixed(3)
-                                  : (
-                                      (isNaN(
-                                        parseInt(item.dis1) /
-                                          parseInt(item.oil1)
-                                      )
-                                        ? 0 +
-                                          parseInt(item.dis2) /
-                                            parseInt(item.oil2) +
-                                          parseInt(item.dis3) /
-                                            parseInt(item.oil3)
-                                        : parseInt(item.dis1) /
-                                            parseInt(item.oil1) +
-                                          parseInt(item.dis2) /
-                                            parseInt(item.oil2) +
-                                          parseInt(item.dis3) /
-                                            parseInt(item.oil3)) / item.average
-                                    ).toFixed(3)}
-                              </td>
+                                        ? "-"
+                                        : (
+                                            parseFloat(item.dis3) /
+                                            Math.abs(parseInt(item.oil3))
+                                          ).toFixed(3)}
+                                    </>
+                                  )}
+                                </td>
 
-                              <td className=" sticky text-sm border">
-                                <select
-                                  name="vehType"
-                                  id="vehType"
-                                  className="font-mono text-xs text-center text-black dark:bg-[#000000] dark:text-white"
-                                  // value={selectVehicleType}
-                                  onChange={handleselectVehicleType}
-                                >
-                                  <option hidden disabled selected value="0">
-                                    เลือกประเภทของยานยนต์
-                                  </option>
-                                  {optionVehicleType
-                                    ? optionVehicleType.map(
-                                        (items: IVehicleSelect) => (
-                                          <option value={items.value}>
-                                            {items.label}
-                                          </option>
+                                <td className="px-2 py-2 text-xs border dark:border-gray-600 ">
+                                  {item.oil1 == "-" ||
+                                  item.oil1 == "0" ||
+                                  item.oil2 == "0" ||
+                                  item.oil3 == "0" ? (
+                                    "-"
+                                  ) : (
+                                    <>
+                                      {item.oil2 == "-" ? (
+                                        isNaN(
+                                          parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                        ) ? (
+                                          "0.000"
+                                        ) : (
+                                          (
+                                            parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                          ).toFixed(3)
                                         )
-                                      )
-                                    : undefined}
-                                </select>
-                              </td>
-                              <td className="sticky text-sm border">
-                                {valueOil}
-                              </td>
-                              <td className="sticky text-sm border">
-                                {selectVehicleType
-                                  ? selectVehicleType
-                                  : undefined}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td className="px-2 py-2 text-xl border">No!!</td>
-                          </tr>
-                        )}
+                                      ) : (
+                                        <>
+                                          {item.oil3 == "-"
+                                            ? (
+                                                (isNaN(
+                                                  parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    )
+                                                )
+                                                  ? 0 +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )
+                                                  : parseFloat(item.dis1) /
+                                                      Math.abs(
+                                                        parseInt(item.oil1)
+                                                      ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) / item.average
+                                              ).toFixed(3)
+                                            : (
+                                                (isNaN(
+                                                  parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    )
+                                                )
+                                                  ? 0 +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      ) +
+                                                    parseFloat(item.dis3) /
+                                                      Math.abs(
+                                                        parseInt(item.oil3)
+                                                      )
+                                                  : parseFloat(item.dis1) /
+                                                      Math.abs(
+                                                        parseInt(item.oil1)
+                                                      ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      ) +
+                                                    parseFloat(item.dis3) /
+                                                      Math.abs(
+                                                        parseInt(item.oil3)
+                                                      )) / item.average
+                                              ).toFixed(3)}
+                                        </>
+                                      )}
+                                    </>
+                                    // <>
+                                    //   {(
+                                    //     parseFloat(item.totleDis) /
+                                    //     parseInt(item.totleOil)
+                                    //   ).toFixed(3)}
+                                    // </>
+                                  )}
+                                </td>
+
+                                <td className=" text-sm border dark:border-gray-600 ">
+                                  {item.veh_type.toString() === "0"
+                                    ? "โปรดระบุประเภทของยานยนต์"
+                                    : item.veh_type}
+                                </td>
+                                <td className="text-sm border dark:border-gray-600 ">
+                                  {valueOil}
+                                </td>
+
+                                {/* function บริษัทกำหนด */}
+                                <>
+                                  {item.oil1 == "-" ||
+                                  item.oil1 == "0" ||
+                                  item.oil2 == "0" ||
+                                  item.oil3 == "0" ||
+                                  item.veh_type == "0" ? (
+                                    <td className="text-black text-sm border dark:border-gray-600">
+                                      -
+                                    </td>
+                                  ) : (
+                                    <>
+                                      {item.oil2 == "-" ? (
+                                        isNaN(
+                                          parseFloat(item.dis1) /
+                                            Math.abs(parseInt(item.oil1))
+                                        ) ? (
+                                          "0.000"
+                                        ) : (
+                                            (parseFloat(item.dis1) /
+                                              Math.abs(parseInt(item.oil1)) -
+                                              parseFloat(item.veh_type_value)) *
+                                            parseFloat(
+                                              valueOil ? valueOil : "0"
+                                            )
+                                          )
+                                            .toString()
+                                            .substring(1, 0) == "-" ? (
+                                          <td className="text-red-500 text-sm border dark:border-gray-600">
+                                            {(
+                                              (parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            ).toFixed(1)}
+                                          </td>
+                                        ) : (
+                                          <td className="text-black text-sm border dark:border-gray-600">
+                                            {(
+                                              (parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            ).toFixed(1)}
+                                          </td>
+                                        )
+                                      ) : (
+                                        <>
+                                          {item.oil3 == "-" ? (
+                                            (
+                                              ((parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) +
+                                                parseFloat(item.dis2) /
+                                                  Math.abs(
+                                                    parseInt(item.oil2)
+                                                  )) /
+                                                item.average -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            )
+                                              .toString()
+                                              .substring(1, 0) == "-" ? (
+                                              <td className="text-red-500 text-sm border dark:border-gray-600">
+                                                {(
+                                                  ((parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) /
+                                                    item.average -
+                                                    parseFloat(
+                                                      item.veh_type_value
+                                                    )) *
+                                                  parseFloat(
+                                                    valueOil ? valueOil : "0"
+                                                  )
+                                                ).toFixed(1)}
+                                              </td>
+                                            ) : (
+                                              <td className="text-black text-sm border dark:border-gray-600">
+                                                {(
+                                                  ((parseFloat(item.dis1) /
+                                                    Math.abs(
+                                                      parseInt(item.oil1)
+                                                    ) +
+                                                    parseFloat(item.dis2) /
+                                                      Math.abs(
+                                                        parseInt(item.oil2)
+                                                      )) /
+                                                    item.average -
+                                                    parseFloat(
+                                                      item.veh_type_value
+                                                    )) *
+                                                  parseFloat(
+                                                    valueOil ? valueOil : "0"
+                                                  )
+                                                ).toFixed(1)}
+                                              </td>
+                                            )
+                                          ) : (
+                                              ((parseFloat(item.dis1) /
+                                                Math.abs(parseInt(item.oil1)) +
+                                                parseFloat(item.dis2) /
+                                                  Math.abs(
+                                                    parseInt(item.oil2)
+                                                  ) +
+                                                parseFloat(item.dis3) /
+                                                  Math.abs(
+                                                    parseInt(item.oil3)
+                                                  )) /
+                                                item.average -
+                                                parseFloat(
+                                                  item.veh_type_value
+                                                )) *
+                                              parseFloat(
+                                                valueOil ? valueOil : "0"
+                                              )
+                                            )
+                                              .toString()
+                                              .substring(1, 0) == "-" ? (
+                                            <td className="text-red-500 text-sm border dark:border-gray-600">
+                                              {(
+                                                ((parseFloat(item.dis1) /
+                                                  Math.abs(
+                                                    parseInt(item.oil1)
+                                                  ) +
+                                                  parseFloat(item.dis2) /
+                                                    Math.abs(
+                                                      parseInt(item.oil2)
+                                                    ) +
+                                                  parseFloat(item.dis3) /
+                                                    Math.abs(
+                                                      parseInt(item.oil3)
+                                                    )) /
+                                                  item.average -
+                                                  parseFloat(
+                                                    item.veh_type_value
+                                                  )) *
+                                                parseFloat(
+                                                  valueOil ? valueOil : "0"
+                                                )
+                                              ).toFixed(1)}
+                                            </td>
+                                          ) : (
+                                            <td className="text-black text-sm border dark:border-gray-600">
+                                              {(
+                                                ((parseFloat(item.dis1) /
+                                                  Math.abs(
+                                                    parseInt(item.oil1)
+                                                  ) +
+                                                  parseFloat(item.dis2) /
+                                                    Math.abs(
+                                                      parseInt(item.oil2)
+                                                    ) +
+                                                  parseFloat(item.dis3) /
+                                                    Math.abs(
+                                                      parseInt(item.oil3)
+                                                    )) /
+                                                  item.average -
+                                                  parseFloat(
+                                                    item.veh_type_value
+                                                  )) *
+                                                parseFloat(
+                                                  valueOil ? valueOil : "0"
+                                                )
+                                              ).toFixed(1)}
+                                            </td>
+                                          )}
+                                        </>
+                                      )}
+                                    </>
+                                    // <>
+                                    //   {(
+                                    //     (parseFloat(
+                                    //       (
+                                    //         parseFloat(item.totleDis) /
+                                    //         parseInt(item.totleOil)
+                                    //       )
+                                    //         .toFixed(3)
+                                    //         .toString()
+                                    //     ) -
+                                    //       parseFloat(item.veh_type_value)) *
+                                    //     parseFloat(valueOil ? valueOil : "0")
+                                    //   )
+                                    //     .toString()
+                                    //     .substring(1, 0) == "-" ? (
+                                    //     <td className="text-red-500 text-sm border dark:border-gray-600">
+
+                                    //     </td>
+                                    //   ) : (
+                                    //     <td className="text-sm border dark:border-gray-600">
+                                    //       {(
+                                    //         (parseFloat(
+                                    //           (
+                                    //             parseFloat(item.totleDis) /
+                                    //             parseInt(item.totleOil)
+                                    //           )
+                                    //             .toFixed(3)
+                                    //             .toString()
+                                    //         ) -
+                                    //           parseFloat(item.veh_type_value)) *
+                                    //         parseFloat(
+                                    //           valueOil ? valueOil : "0"
+                                    //         )
+                                    //       ).toFixed(3)}
+                                    //     </td>
+                                    //   )}
+                                    // </>
+                                  )}
+                                </>
+                              </tr>
+                            ))
+                          : undefined}
                       </tbody>
                     </table>
                   )}

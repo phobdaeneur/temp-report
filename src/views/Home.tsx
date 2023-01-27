@@ -51,10 +51,7 @@ function Home() {
    * Retrive Fleets
    */
   const { data: fleetData, error } = useSWR(
-    [
-      `https://geotrackerbackend.kratostracking.com:5000/api/fleets/${user?.username}`,
-      config,
-    ],
+    [`http://localhost:5000/api/fleets/${user?.username}`, config],
     fetcher
   );
 

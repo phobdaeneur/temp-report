@@ -108,10 +108,7 @@ function TempReport({ selectFleet }: Props) {
    * Retrive Vehicles
    */
   const { data: vehicleData, error: vehicleError } = useSWR(
-    [
-      `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicles/${selectFleet?.value}`,
-      config,
-    ],
+    [`http://localhost:5000/api/fleet/vehicles/${selectFleet?.value}`, config],
     fetcher
   );
 
@@ -126,7 +123,7 @@ function TempReport({ selectFleet }: Props) {
   const { data: vehicleReportData, error: vehicleReportError } = useSWR(
     [
       shouldFetch
-        ? `https://geotrackerbackend.kratostracking.com:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
+        ? `http://localhost:5000/api/fleet/vehicleReport/${selectVehicle?.value}/${dateStartChange}/${dateEndChange}`
         : undefined,
       config,
     ],
